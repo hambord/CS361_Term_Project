@@ -1,8 +1,9 @@
 import os
 import string
+import pickle
 from dataclasses import dataclass
 from generator import generate
-from tools import clear, newline, press_enter_key, write_to_file, license_information
+from tools import clear, newline, press_enter_key, license_information
 
 
 @dataclass
@@ -66,7 +67,12 @@ def option_one(front_data_inp):
                     print("Generated successfully! Would you like to export the dungeon to a text file?")
                     inner_loop_opt = input("Enter 'Y' to view or 'N' to continue: ")
                     if inner_loop_opt == "Y" or inner_loop_opt == "y":
-                        write_to_file(front_data_inp)
+                        file = open(front_data_inp.export_filename + ".txt", "wb")
+                        pickle.dump(front_data_inp, file)
+                        file.close()
+                        print("Please run the exporter.py file and load the text file with your filename to run exporter!")
+                        newline()
+                        press_enter_key()
                         break
                     else:
                         break
@@ -76,7 +82,12 @@ def option_one(front_data_inp):
                     inner_loop_opt = input("Would you like to configure them now? Enter 'Y' to configure or 'N' to not save this instance: ")
                     if inner_loop_opt == "Y" or inner_loop_opt == "y":
                         option_three(front_data_inp)
-                        write_to_file(front_data_inp)
+                        file = open(front_data_inp.export_filename + ".txt", "wb")
+                        pickle.dump(front_data_inp, file)
+                        file.close()
+                        print("Please run the exporter.py file and load the text file with your filename to run exporter!")
+                        newline()
+                        press_enter_key()
                         front_data_inp.export_generation_ready == 1
                     else:
                         break
@@ -103,6 +114,7 @@ def option_one(front_data_inp):
         newline()
         input("Press the Enter key to return to the main menu...")
         return
+
 
 def _option_one_writelines(front_data_inp, file):
     for each in front_data_inp.map_data.string_data:

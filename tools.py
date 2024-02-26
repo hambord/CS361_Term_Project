@@ -16,12 +16,12 @@ def clear():
     else:
         _ = system('clear')
 
-
-def write_to_file(front_data_inp):
-    file = open(front_data_inp.export_filename + ".txt", "w")
-    for each_line in front_data_inp.map_data.string_data:
-        file.writelines(each_line)
-    return
+#
+#def write_to_file(front_data_inp):
+#    file = open(front_data_inp.export_filename + ".txt", "w")
+#    for each_line in front_data_inp.map_data.string_data:
+#        file.writelines(each_line)
+#    return
 
 
 def a_star(start, goal):
