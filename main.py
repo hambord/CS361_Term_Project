@@ -1,5 +1,7 @@
 import os
+import time
 import string
+import subprocess
 import pickle
 from dataclasses import dataclass
 from generator import generate
@@ -8,7 +10,7 @@ from tools import clear, newline, press_enter_key, license_information
 
 @dataclass
 class FrontData:
-    map_data: None
+    map_instance: None
     export_filename: string
     export_filename_dict: dict
     export_custom_tiles: list
@@ -39,7 +41,7 @@ def main_menu(front_data_inp):
         print("Export status: Configured to export as " + str(front_data_inp.export_filename) + ".txt!")
     newline()
 
-    print("1: Generate/Regenerate a dungeon instance.")
+    print("1: Generate/regenerate a dungeon instance.")
     print("2: Set parameters for dungeon generation.")
     print("3: Configure exporter for the dungeon instance.")
     print("4: View complete credits and licensing information.")
@@ -49,7 +51,7 @@ def main_menu(front_data_inp):
 
 def option_one(front_data_inp):
     print("Randomized Dungeon Generator [CS 361]")
-    print("1. Generate/Regenerate a dungeon instance.")
+    print("1. Generate/regenerate a dungeon instance.")
     newline()
 
     if front_data_inp.parameters_generation_ready == 1:
@@ -61,8 +63,8 @@ def option_one(front_data_inp):
         inner_loop_input = input("Enter your selection here: ")
         while inner_loop_input is not None:
             if inner_loop_input == "Y" or inner_loop_input == "y":
-                front_data_inp.map_data = generate(front_data_inp.desired_rooms_x, front_data_inp.desired_rooms_y,
-                                                   front_data_inp.desired_room_size)
+                front_data_inp.map_instance = generate(front_data_inp.desired_rooms_x, front_data_inp.desired_rooms_y,
+                                                       front_data_inp.desired_room_size)
                 if front_data_inp.export_generation_ready == 1:
                     newline()
                     print("Generated successfully! Would you like to export the dungeon to a text file?")
@@ -71,7 +73,9 @@ def option_one(front_data_inp):
                         file = open(front_data_inp.export_filename + ".txt", "wb")
                         pickle.dump(front_data_inp, file)
                         file.close()
-                        print("Please run the exporter.py file and load the text file with your filename to run exporter!")
+                        # Microservice entry here.
+                        _option_one_microservice_run(front_data_inp)
+                        #
                         newline()
                         press_enter_key()
                         break
@@ -80,13 +84,16 @@ def option_one(front_data_inp):
                 else:
                     newline()
                     print("Generation was successful, but export settings were not configured!")
-                    inner_loop_opt = input("Would you like to configure them now? Enter 'Y' to configure or 'N' to not save this instance: ")
+                    inner_loop_opt = input(
+                        "Would you like to configure them now? Enter 'Y' to configure or 'N' to not save this instance: ")
                     if inner_loop_opt == "Y" or inner_loop_opt == "y":
                         option_three(front_data_inp)
                         file = open(front_data_inp.export_filename + ".txt", "wb")
                         pickle.dump(front_data_inp, file)
                         file.close()
-                        print("Please run the exporter.py file and load the text file with your filename to run exporter!")
+                        # Microservice entry here.
+                        _option_one_microservice_run(front_data_inp)
+                        #
                         newline()
                         press_enter_key()
                         front_data_inp.export_generation_ready == 1
@@ -103,11 +110,11 @@ def option_one(front_data_inp):
 
     clear()
     print("Randomized Dungeon Generator [CS 361]")
-    print("1. Generate/Regenerate a dungeon instance.")
+    print("1. Generate/regenerate a dungeon instance.")
     newline()
-    inner_loop_opt = input("View the instance now? Enter 'Y' to configure or 'N' to not save this instance: ")
+    inner_loop_opt = input("View the instance now? Enter 'Y' to view or 'N' to return: ")
     if inner_loop_opt == "Y" or inner_loop_opt == "y":
-        for each in front_data_inp.map_data.string_data:
+        for each in front_data_inp.map_instance.string_data:
             print(each)
         newline()
         input("Press the Enter key to return to the main menu...")
@@ -117,9 +124,36 @@ def option_one(front_data_inp):
         return
 
 
-def _option_one_writelines(front_data_inp, file):
-    for each in front_data_inp.map_data.string_data:
-        file.write(each)
+def _option_one_microservice_run(front_data_inp):
+    try:
+        exporter_path = '.\\exporter.py'
+        exporter_filename = front_data_inp.export_filename
+
+        command = f'start cmd /k python "{exporter_path}" --arg1 "{exporter_filename}"'
+        subprocess.run(command, shell=True, check=True)
+    # Do this in case the exporter.py file is missing or "down."
+    except subprocess.CalledProcessError:
+        print("ERROR: Could not start the exporter microservice. It may be misplaced or not complete.")
+        print("Please check that exporter.py is in the root directory and has not been modified.")
+
+    # Process result code returned from (export_filename)_results.txt, then delete it instantly.
+    # I could probably append this into the export text file, but I don't want to create errors in it.
+    time.sleep(0.5)
+    file_result = open(str(front_data_inp.export_filename) + "_result.txt", "r")
+    if file_result.read() == "0":
+        newline()
+        print("Exported to the root directory as + " + str(front_data_inp.export_filename) + "_result.txt.")
+    elif file_result.read() == "1":
+        newline()
+        print(str(front_data_inp.export_filename) + ".txt loaded, but contains corrupted data. Please try again or "
+                                                    "regenerate your instance!")
+    elif file_result.read() == "2":
+        newline()
+        print(str(front_data_inp.export_filename) + ".txt is not a valid filename or was not captured properly. Please "
+                                                    "try again or regenerate your instance!")
+    file_result.close()
+    os.remove(str(front_data_inp.export_filename) + "_result.txt")
+    return
 
 
 def option_two(front_data_inp):
@@ -306,7 +340,8 @@ def option_four():
     print("Additional microservice implementation by: (PARTNER HERE)")
     newline()
     print("This project was made for Professor Letaw's Systems Programming course at Oregon State University, SEC. 400")
-    print("Special thanks to u/mizipzor, Kuoi.org, and RogueBasin for the learning material on the algorithm's implementation!")
+    print(
+        "Special thanks to u/mizipzor, Kuoi.org, and RogueBasin for the learning material on the algorithm's implementation!")
     newline()
     print("This software is open source and licensed under the MIT License. Would you like to view it now?")
 
