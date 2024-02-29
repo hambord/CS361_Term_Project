@@ -11,6 +11,7 @@ class FrontData:
     map_data: None
     export_filename: string
     export_filename_dict: dict
+    export_custom_tiles: list
 
     parameters_generation_ready: int
     export_generation_ready: int
@@ -40,7 +41,7 @@ def main_menu(front_data_inp):
 
     print("1: Generate/Regenerate a dungeon instance.")
     print("2: Set parameters for dungeon generation.")
-    print("3: Set filename for dungeon instance.")
+    print("3: Configure exporter for the dungeon instance.")
     print("4: View complete credits and licensing information.")
     print("5: Exit")
     newline()
@@ -200,7 +201,7 @@ def option_three(front_data_inp):
 
     clear()
     print("Randomized Dungeon Generator [CS 361]")
-    print("3. Set filename for dungeon instance.")
+    print("3. Configure exporter for the dungeon instance.")
     newline()
     print("Current filename selected: " + str(front_data_inp.export_filename))
 
@@ -218,25 +219,28 @@ def option_three(front_data_inp):
         else:
             filename_dictionary_flag = input("ERROR: Invalid character. Enter 'Y' to view or 'N' to continue: ")
 
-    clear()
-    print("Randomized Dungeon Generator [CS 361]")
-    print("3. Set filename for dungeon instance.")
-    newline()
-
     while filename_set_flag == 0:
+        clear()
+        print("Randomized Dungeon Generator [CS 361]")
+        print("3. Configure exporter for the dungeon instance.")
+        newline()
+
         print("NOTE: Your chosen name will be forced into lowercase for compatibility reasons.")
         filename = input("What name would you like for the exported text file containing the generated dungeon?: ")
         filename = filename.lower()
         # If it exists both in dictionary and directory. There is almost definitely a duplicate.
         if filename in front_data_inp.export_filename_dict and os.path.exists(filename):
+            newline()
             print("CAUTION! " + str(filename) + " exists both in generated dictionary and directory.")
             filename_set_flag = _option_three_confirmation(front_data_inp, filename)
         # If it exists only in the current directory.
         elif os.path.exists(filename):
+            newline()
             print("CAUTION! " + str(filename) + " exists in the generator's directory.")
             filename_set_flag = _option_three_confirmation(front_data_inp, filename)
         # Exists only in generated dictionary. Courtesy warning to check project files for duplicate map.
         elif filename in front_data_inp.export_filename_dict:
+            newline()
             print("CAUTION! " + str(filename) + " exists in generated dictionary. "
                                                 "Check your individual project files for a duplicate map.")
             filename_set_flag = _option_three_confirmation(front_data_inp, filename)
@@ -246,8 +250,27 @@ def option_three(front_data_inp):
             _option_three_increment(front_data_inp, filename)
             break
     front_data_inp.export_generation_ready = 1
+    clear()
+    print("Randomized Dungeon Generator [CS 361]")
+    print("3. Configure exporter for the dungeon instance.")
     newline()
-    print("Filename successfully set! ", end='')
+
+    print("Filename successfully set! Would you like to customize the tiles in the exported map?")
+    custom_tiles_set = input("Enter Y to customize, or N to keep the default tiles: ")
+    if custom_tiles_set == "Y" or custom_tiles_set == "y":
+        newline()
+        front_data_inp.export_custom_tiles[0] = input("What would you like to change the tile of the walls to: ")
+        front_data_inp.export_custom_tiles[1] = input("What would you like to change the tile of the floors to: ")
+    else:
+        front_data_inp.export_custom_tiles[0] = "#"
+        front_data_inp.export_custom_tiles[1] = "."
+
+    newline()
+
+    print("Exporter customization complete! Your instance will export as " + filename + " with " +
+          front_data_inp.export_custom_tiles[0] + " for walls and " + front_data_inp.export_custom_tiles[1] +
+          " for floors!")
+
     newline()
     press_enter_key()
     return 1
@@ -303,7 +326,7 @@ def option_four():
 
 if __name__ == "__main__":
     main_menu_option = ""
-    main_menu_data = FrontData(None, None, {}, 0, 0, 0, 0, 0)
+    main_menu_data = FrontData(None, None, {}, ["#", "."], 0, 0, 0, 0, 0)
 
     clear()
     while main_menu_option != "5":
