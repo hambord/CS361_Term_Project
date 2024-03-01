@@ -1,4 +1,5 @@
 # Extra tools and odd bits to be used throughout main.py and generator.py
+import time
 from os import system, name
 
 
@@ -92,3 +93,24 @@ def license_information():
     print("THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS")
     print("OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR")
     print("OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.")
+
+
+# Keep receiving the appropriate segment until something interrupts it.
+# Preferably finding the file in generator and exporter.
+def cool_loopy_thing(loop_spinny):
+    if loop_spinny == 0:
+        print("|", end="\r")
+        time.sleep(0.35)
+        return 1
+    elif loop_spinny == 1:
+        print("\\", end="\r")
+        time.sleep(0.35)
+        return 2
+    elif loop_spinny == 2:
+        print("-", end="\r")
+        time.sleep(0.35)
+        return 3
+    elif loop_spinny == 3:
+        print("/", end="\r")
+        time.sleep(0.35)
+        return 0

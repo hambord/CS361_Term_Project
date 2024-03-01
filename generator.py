@@ -1,7 +1,12 @@
 import random
 import itertools
+import os
+import time
+import string
+import pickle
+from pathlib import Path
 from dataclasses import dataclass
-from tools import a_star, newline, press_enter_key
+from tools import a_star, newline, cool_loopy_thing, clear
 
 
 # For exporting to both display and game data
@@ -11,6 +16,25 @@ class export_data:
     string_data: list
 
 
+@dataclass
+class FrontData:
+    map_instance: None
+    export_filename: string
+    export_filename_dict: dict
+    export_custom_tiles: list
+
+    parameters_generation_ready: int
+    export_generation_ready: int
+
+    desired_rooms_x: int
+    desired_rooms_y: int
+    desired_room_size: int
+
+    generated: bool
+    exported: bool
+
+
+# rooms_x, rooms_y, cell_size=5
 def generate(rooms_x, rooms_y, cell_size=5):
     # Makes up all the tile data in the generator.
     class Cell(object):
@@ -154,12 +178,77 @@ def generate(rooms_x, rooms_y, cell_size=5):
     return for_export
 
 
+def exporter(input_object):
+    print("Exporting changes to current text file " + input_object.export_filename + ".txt")
+    change_tiles(input_object)
+    write_to_file(input_object)
+    return
+
+
+def change_tiles(input_object):
+    for row in range(0, len(input_object.map_instance.string_data)):
+        temp = []
+        for tile in range(0, len(input_object.map_instance.string_data[row])):
+            if input_object.map_instance.string_data[row][tile] == "#":
+                temp.append(input_object.export_custom_tiles[0])
+            elif input_object.map_instance.string_data[row][tile] == ".":
+                temp.append(input_object.export_custom_tiles[1])
+            else:
+                continue
+        input_object.map_instance.string_data[row] = ''.join(temp)
+
+
+def write_to_file(input_object):
+    file_to_export = open(input_object.export_filename + ".txt", "w")
+    for each_line in input_object.map_instance.string_data:
+        file_to_export.write(each_line + "\n")
+    file_to_export.close()
+    return
+
+
 # Implementation of usability heuristic seven, as power users are prompted to remove this bit below. It also protects
 # low-risk, end-users from awkward operation of the application via renaming or incomplete files.
 if __name__ == "__main__":
-    print("Randomized Dungeon Generator [CS 361]")
+    clear()
+    print("Randomized Dungeon Generator Service [CS 361]")
     newline()
-    print("ERROR: Please use main.py as the entry point to the generator! Do not run this independently.")
-    print("If you are an advanced and/or knowledgeable user, remove or comment out this section of generator.py!")
-    newline()
-    press_enter_key()
+    seeking = True
+    seeking_segment = 0
+
+    while seeking:
+        to_generate = os.listdir('./working')
+        if not to_generate:
+            print("Searching the working directory for instances to generate... ", end='')
+            seeking_segment = cool_loopy_thing(seeking_segment)
+        else:
+            clear()
+            print("Randomized Dungeon Generator Service [CS 361]")
+            for each in to_generate:
+                try:
+                    file_to_process = open(str(Path.cwd()) + "/working/" + each, "rb")
+                    input_object = pickle.load(file_to_process)
+                    file_to_process.close()
+
+                    newline()
+                    print("Generating the current instance captured! Please wait...")
+                    time.sleep(1)
+                    input_object.map_instance = generate(input_object.desired_rooms_x, input_object.desired_rooms_y,
+                                                         input_object.desired_room_size)
+                    file_to_toss_back = open(str(Path.cwd()) + "/working/current_instance.txt", "wb")
+                    pickle.dump(input_object, file_to_toss_back)
+                    file_to_toss_back.close()
+                    Path("./working/current_instance.txt").rename("current_instance.txt")
+
+                    if input_object.export_generation_ready == 1:
+                        exporter(input_object)
+                        time.sleep(1)
+
+                    newline()
+                    print("New instance generated successfully! Please return to the main.py terminal.")
+                    newline()
+                except pickle.UnpicklingError:
+                    print(each + " loaded, but is corrupted. Please try again or regenerate your instance!")
+                    newline()
+                except FileNotFoundError:
+                    print(each + " is not a valid filename. Please try again or regenerate your instance!")
+                    newline()
