@@ -1,11 +1,17 @@
 import os
-import time
 import string
-import subprocess
 import pickle
+import time
+from pathlib import Path
 from dataclasses import dataclass
-from generator import generate
-from tools import clear, newline, press_enter_key, license_information
+from tools import clear, newline, press_enter_key, license_information, cool_loopy_thing
+
+
+# For exporting to both display and game data
+@dataclass
+class export_data:
+    map_data: None
+    string_data: list
 
 
 @dataclass
@@ -21,6 +27,9 @@ class FrontData:
     desired_rooms_x: int
     desired_rooms_y: int
     desired_room_size: int
+
+    generated: bool
+    exported: bool
 
 
 def main_menu(front_data_inp):
@@ -63,57 +72,39 @@ def option_one(front_data_inp):
         inner_loop_input = input("Enter your selection here: ")
         while inner_loop_input is not None:
             if inner_loop_input == "Y" or inner_loop_input == "y":
-                front_data_inp.map_instance = generate(front_data_inp.desired_rooms_x, front_data_inp.desired_rooms_y,
-                                                       front_data_inp.desired_room_size)
+                file = open("working/current_instance.txt", "wb")
+                pickle.dump(front_data_inp, file)
+                file.close()
+
+                seeking_segment = 0
+                while os.listdir('./working'):
+                    print("Now generating the instance! Please wait... ", end='')
+                    seeking_segment = cool_loopy_thing(seeking_segment)
+
+                file_current = open("current_instance.txt", "rb")
+                front_data_inp = pickle.load(file_current)
+                file_current.close()
+                os.remove("current_instance.txt")
+
                 if front_data_inp.export_generation_ready == 1:
-                    newline()
-                    print("Generated successfully! Would you like to export the dungeon to a text file?")
-                    inner_loop_opt = input("Enter 'Y' to view or 'N' to continue: ")
-                    if inner_loop_opt == "Y" or inner_loop_opt == "y":
-                        file = open(front_data_inp.export_filename + ".txt", "wb")
-                        pickle.dump(front_data_inp, file)
-                        file.close()
-                        # Microservice entry here.
-                        _option_one_microservice_run(front_data_inp)
-                        #
-                        newline()
-                        press_enter_key()
-                        break
-                    else:
-                        break
+                    print("Generated successfully! Currently exporting as " + front_data_inp.export_filename + ".txt")
+                    print("Export successful! Located in root as " + front_data_inp.export_filename + ".txt")
+                    break
                 else:
                     newline()
                     print("Generation was successful, but export settings were not configured!")
-                    inner_loop_opt = input(
-                        "Would you like to configure them now? Enter 'Y' to configure or 'N' to not save this instance: ")
-                    if inner_loop_opt == "Y" or inner_loop_opt == "y":
-                        option_three(front_data_inp)
-                        file = open(front_data_inp.export_filename + ".txt", "wb")
-                        pickle.dump(front_data_inp, file)
-                        file.close()
-                        # Microservice entry here.
-                        _option_one_microservice_run(front_data_inp)
-                        #
-                        newline()
-                        press_enter_key()
-                        front_data_inp.export_generation_ready == 1
-                    else:
-                        break
+                    break
             elif inner_loop_input == "N" or inner_loop_input == "n":
                 break
             else:
                 input("You entered an invalid option! Try again!")
-    elif front_data_inp.parameters_generation_ready == 0:
-        print("Configuration is not complete! Please configure parameters before running the generator.")
-        newline()
-        press_enter_key()
-
-    clear()
-    print("Randomized Dungeon Generator [CS 361]")
-    print("1. Generate/regenerate a dungeon instance.")
     newline()
     inner_loop_opt = input("View the instance now? Enter 'Y' to view or 'N' to return: ")
     if inner_loop_opt == "Y" or inner_loop_opt == "y":
+        clear()
+        print("Randomized Dungeon Generator [CS 361]")
+        print("1. Generate/regenerate a dungeon instance.")
+        newline()
         for each in front_data_inp.map_instance.string_data:
             print(each)
         newline()
@@ -122,38 +113,6 @@ def option_one(front_data_inp):
         newline()
         input("Press the Enter key to return to the main menu...")
         return
-
-
-def _option_one_microservice_run(front_data_inp):
-    try:
-        exporter_path = '.\\exporter.py'
-        exporter_filename = front_data_inp.export_filename
-
-        command = f'start cmd /k python "{exporter_path}" --arg1 "{exporter_filename}"'
-        subprocess.run(command, shell=True, check=True)
-    # Do this in case the exporter.py file is missing or "down."
-    except subprocess.CalledProcessError:
-        print("ERROR: Could not start the exporter microservice. It may be misplaced or not complete.")
-        print("Please check that exporter.py is in the root directory and has not been modified.")
-
-    # Process result code returned from (export_filename)_results.txt, then delete it instantly.
-    # I could probably append this into the export text file, but I don't want to create errors in it.
-    time.sleep(0.5)
-    file_result = open(str(front_data_inp.export_filename) + "_result.txt", "r")
-    if file_result.read() == "0":
-        newline()
-        print("Exported to the root directory as + " + str(front_data_inp.export_filename) + "_result.txt.")
-    elif file_result.read() == "1":
-        newline()
-        print(str(front_data_inp.export_filename) + ".txt loaded, but contains corrupted data. Please try again or "
-                                                    "regenerate your instance!")
-    elif file_result.read() == "2":
-        newline()
-        print(str(front_data_inp.export_filename) + ".txt is not a valid filename or was not captured properly. Please "
-                                                    "try again or regenerate your instance!")
-    file_result.close()
-    os.remove(str(front_data_inp.export_filename) + "_result.txt")
-    return
 
 
 def option_two(front_data_inp):
@@ -301,11 +260,10 @@ def option_three(front_data_inp):
 
     newline()
 
-    print("Exporter customization complete! Your instance will export as " + filename + " with " +
-          front_data_inp.export_custom_tiles[0] + " for walls and " + front_data_inp.export_custom_tiles[1] +
-          " for floors!")
+    print("Exporter customization complete! Your instance will export as " + filename + ".txt with '" +
+          front_data_inp.export_custom_tiles[0] + "' for walls and '" + front_data_inp.export_custom_tiles[1] +
+          "' for floors!")
 
-    newline()
     press_enter_key()
     return 1
 
@@ -361,7 +319,7 @@ def option_four():
 
 if __name__ == "__main__":
     main_menu_option = ""
-    main_menu_data = FrontData(None, None, {}, ["#", "."], 0, 0, 0, 0, 0)
+    main_menu_data = FrontData(None, None, {}, ["#", "."], 0, 0, 0, 0, 0, 0, 0)
 
     clear()
     while main_menu_option != "5":
