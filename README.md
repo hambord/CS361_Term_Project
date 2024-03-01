@@ -1,8 +1,6 @@
 ### Extended Microservice Documentation
-![alt text](https://github.com/hambord/CS361_Term_Project/blob/main/resources/microservice_uml.png?raw=true)
+![alt text](https://github.com/hambord/CS361_Term_Project/blob/main/resources/microservice_revised.png?raw=true)
 
-This additional microservice acts as an extension of the export functionality of the main dungeon generator application. Once an instance has been created, the user will be offered the ability to export the instance to a text file. If the user approves, the instance will be serialized in a binary format to be ran by the exporter microservice.
+This revised version of the microservice combines both the generator and exporter functionality into one, persistent service that persistently searches the "working" folder for serialized instance data to generate a result from. The two text files, "current_instance.txt" is a temporary file meant to jump-start the instance generation and to hand the data back to the client. This text file is deleted almost right away after the generation is finished. The second text file contains the exported version of the map, if set. It also contains all the customizing tile parameters if the user has set them.
 
-From here, the exporter will direct the user to import the text file. It will then deserialize the instance object (FrontData here), and offer two options: changing tiles and exporting. Changing the tiles is optional, but exporting is required. The changing tiles option changes the visual representation of the instance object, but leaves the raw data of the instance alone for compatability reasons.
-
-PLEASE NOTE: Running the exporter will remove the serialized data from the text file. If, for any advanced reason, you need this serialized data, do not run the exporter.
+Unlike my first milestone, generator.py is meant to run in the background at all times. It uses these two text files as a communication layer to send and recieve work. Above is a UML diagram that highlights visually this "hand off" between both generator.py and main.py.
